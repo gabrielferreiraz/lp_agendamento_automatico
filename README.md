@@ -1,36 +1,72 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# forms-e-agendamento-call
 
-## Getting Started
+Landing page de captação de leads pra anúncios do Meta Ads da Reobote
+Consórcios. Substitui o formulário nativo do Facebook: mesmas perguntas de
+qualificação, mais uma etapa de agendamento automático da reunião de
+fechamento (só o próximo dia útil, em slots fixos, ver `lib/crm.ts` e a
+documentação em `crm.reoboteconsorcios.com.br/docs`).
 
-First, run the development server:
+## Como roda
+
+Sem banco de dados próprio — esta aplicação é "burra" de propósito: o
+navegador do lead só fala com as rotas internas (`/api/lead`,
+`/api/availability`, `/api/appointments`, `/api/notify`), e são essas rotas
+que, no servidor, chamam:
+
+- **CRM** (`lib/crm.ts`) — cria o contato/negócio e reserva o horário
+  (usa a API v1, autenticada por `CRM_API_KEY`).
+- **n8n** (`lib/n8n.ts`) — dispara o aviso de WhatsApp (Evolution API) pro
+  Renan (supervisor) e pro consultor responsável.
+- **Meta Conversions API** (`lib/meta-capi.ts`) — opcional, só liga
+  quando `NEXT_PUBLIC_META_PIXEL_ID` + `META_CAPI_ACCESS_TOKEN` estiverem
+  preenchidos.
 
 ```bash
+npm install
+cp .env.example .env   # preencher com os valores reais
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Fluxo do formulário
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+1. Passos 1-4: qualificação (valor de crédito, faixa de parcela, prazo,
+   motivo) — só em memória no client, nada é enviado ainda.
+2. Passo 5 (contato): ao confirmar, `POST /api/lead` já cria o
+   contato + negócio no CRM — **isso acontece mesmo que o lead não chegue
+   a agendar depois** (decisão do cliente: nunca perder o lead por causa da
+   etapa de agendamento).
+3. Passo 6 (agendamento): mostra os horários do próximo dia útil
+   (`GET /api/availability`). Se o lead confirma um horário,
+   `POST /api/appointments` reserva o slot e o aviso de WhatsApp
+   (`/api/notify`, `agendado: true`) sai na hora. Se o lead sair da página
+   ou ficar 5 minutos sem decidir, o aviso sai sozinho com
+   `agendado: false` (ver `lib/use-exit-notify.ts`) — o texto da mensagem
+   em si é decidido dentro do workflow do n8n a partir desse campo.
+4. Passo 7: tela de confirmação (com ou sem horário marcado).
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variáveis de ambiente
 
-## Learn More
+Ver `.env.example`. Duas exigem atenção antes de ir pra produção:
 
-To learn more about Next.js, take a look at the following resources:
+- `N8N_WEBHOOK_URL` — precisa ser a URL de **produção** do n8n
+  (`/webhook/agendamento-lp`, sem `-test`), com o workflow **Active**.
+- `NEXT_PUBLIC_META_PIXEL_ID` — por ser `NEXT_PUBLIC_*`, é gravada no
+  bundle JS **durante o build**, não em runtime. No Docker/EasyPanel isso
+  precisa vir como *build arg*, não só como env var do container (ver
+  comentário no `Dockerfile`).
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Deploy
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+`Dockerfile` gera uma imagem standalone do Next.js, mesmo padrão do
+`crm-reobote`, pronta pra subir no EasyPanel.
 
-## Deploy on Vercel
+## Pendências conhecidas
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Sincronização real com o Google Calendar do consultor está desligada no
+  CRM (app do Google ainda não verificado — ver conversa/decisão do
+  cliente). O agendamento funciona normalmente sem isso; só não aparece
+  sozinho no Google Calendar do celular do consultor ainda.
+- Pixel ID e token da Conversions API da Meta ainda não foram fornecidos.
+- `CRM_OWNER_ID` está fixo (Vinícius) — quando entrar mais de um
+  consultor, isso vira seleção dinâmica em `/api/availability` e
+  `/api/appointments`.
