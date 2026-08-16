@@ -25,20 +25,6 @@ import {
 
 const TOTAL_STEPS = 7;
 
-function LoadingShell() {
-  // Só aparece por uma fração de segundo (leitura de localStorage é
-  // síncrona e instantânea) — existe pra nunca desenhar a etapa 1 do zero
-  // e "piscar" pra etapa retomada logo em seguida, o que pareceria bugado.
-  return (
-    <div className="glass-card flex w-full max-w-md items-center justify-center p-8" style={{ minHeight: 280 }}>
-      <svg className="h-6 w-6 animate-spin text-white/40" viewBox="0 0 24 24" fill="none">
-        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
-      </svg>
-    </div>
-  );
-}
-
 export function LeadForm() {
   const [hydrated, setHydrated] = useState(false);
   const [step, setStep] = useState(0);
@@ -74,8 +60,9 @@ export function LeadForm() {
   const [scheduled, setScheduled] = useState<{ date: string; time: string } | null>(null);
 
   // Retoma um preenchimento interrompido (reload sem querer, aba fechada
-  // por engano) antes de mostrar qualquer etapa — só então libera o
-  // render de verdade (ver `hydrated`), pra nunca piscar a etapa 1.
+  // por engano) logo depois do primeiro paint — a etapa 1 já apareceu
+  // (ver comentário perto do `switch` mais abaixo), então isso só troca
+  // de etapa quando existe progresso salvo de verdade.
   useEffect(() => {
     // Lê localStorage + URL/cookies (sistemas externos ao React) uma vez,
     // no mount — não dá pra calcular isso durante o render porque este
@@ -218,8 +205,13 @@ export function LeadForm() {
     goToStep(6);
   }
 
-  if (!hydrated) return <LoadingShell />;
-
+  // Sem gate de "espera hidratar" aqui de propósito: a grande maioria de
+  // quem abre a landing nunca esteve aqui antes, então mostrar a etapa 1
+  // imediatamente (inclusive no HTML estático, antes do JS carregar) é o
+  // que importa pra velocidade percebida. Os poucos casos com progresso
+  // salvo (ver efeito acima) trocam de etapa um instante depois do
+  // primeiro paint — a própria transição entre etapas (StepTransition) já
+  // deixa essa troca suave, em vez de aparecer quebrada.
   let content;
   switch (step) {
     case 0:
