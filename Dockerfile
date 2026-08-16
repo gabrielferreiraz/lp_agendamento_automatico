@@ -10,14 +10,6 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# NEXT_PUBLIC_* é gravado dentro do bundle JS do navegador durante o build
-# do Next.js, não lido em runtime — precisa chegar aqui, antes do
-# `npm run build`, senão o Pixel da Meta nunca vê o Pixel ID mesmo com a
-# env var certa configurada no EasyPanel só pro container em execução
-# (mesmo detalhe do NEXT_PUBLIC_VAPID_PUBLIC_KEY no crm-reobote).
-ARG NEXT_PUBLIC_META_PIXEL_ID=""
-ENV NEXT_PUBLIC_META_PIXEL_ID=${NEXT_PUBLIC_META_PIXEL_ID}
-
 RUN npm run build
 
 # ─── runner: imagem final, só com o necessário pra rodar ──────────────

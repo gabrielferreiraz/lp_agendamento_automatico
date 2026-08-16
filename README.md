@@ -18,7 +18,7 @@ que, no servidor, chamam:
 - **n8n** (`lib/n8n.ts`) — dispara o aviso de WhatsApp (Evolution API) pro
   Renan (supervisor) e pro consultor responsável.
 - **Meta Conversions API** (`lib/meta-capi.ts`) — opcional, só liga
-  quando `NEXT_PUBLIC_META_PIXEL_ID` + `META_CAPI_ACCESS_TOKEN` estiverem
+  quando `META_PIXEL_ID` + `META_CAPI_ACCESS_TOKEN` estiverem
   preenchidos.
 
 ```bash
@@ -46,14 +46,15 @@ npm run dev
 
 ## Variáveis de ambiente
 
-Ver `.env.example`. Duas exigem atenção antes de ir pra produção:
+Ver `.env.example`. Todas são lidas em runtime, a cada request (`/` e
+`/privacidade` usam `dynamic = "force-dynamic"` — ver `app/layout.tsx` —
+justamente pra nenhuma variável de ambiente ficar "congelada" dentro do
+HTML gerado no build) — então basta configurar como env var normal em
+qualquer painel de hospedagem, sem precisar de "build arg" especial pra
+nenhuma delas. Único ponto de atenção real:
 
 - `N8N_WEBHOOK_URL` — precisa ser a URL de **produção** do n8n
   (`/webhook/agendamento-lp`, sem `-test`), com o workflow **Active**.
-- `NEXT_PUBLIC_META_PIXEL_ID` — por ser `NEXT_PUBLIC_*`, é gravada no
-  bundle JS **durante o build**, não em runtime. No Docker/EasyPanel isso
-  precisa vir como *build arg*, não só como env var do container (ver
-  comentário no `Dockerfile`).
 
 ## Deploy
 

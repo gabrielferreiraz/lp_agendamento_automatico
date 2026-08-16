@@ -21,6 +21,6 @@ export const env = {
   n8nWebhookUrl: () => required("N8N_WEBHOOK_URL"),
 
   // Opcionais — sem eles a integração correspondente só fica desligada.
-  metaPixelId: () => process.env.NEXT_PUBLIC_META_PIXEL_ID || null,
+  metaPixelId: () => process.env.META_PIXEL_ID || null,
   metaCapiToken: () => process.env.META_CAPI_ACCESS_TOKEN || null,
 };

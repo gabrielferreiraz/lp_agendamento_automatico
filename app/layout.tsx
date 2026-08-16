@@ -14,6 +14,16 @@ export const metadata: Metadata = {
   description: "Simule seu consórcio e agende uma conversa rápida com um consultor Reobote.",
 };
 
+// Sem isso, "/" e "/privacidade" seriam pré-gerados uma única vez no
+// build (ver MetaPixel.tsx) — qualquer variável de ambiente configurada
+// só DEPOIS do build (o caso comum em painéis como o EasyPanel, que não
+// necessariamente reconstroem a imagem ao mudar uma env var) nunca
+// apareceria no site. Troca por renderização a cada request (mesmo
+// padrão já usado nas rotas /api/*) — custo desprezível pra uma página
+// deste tamanho, e ganha a variável sempre refletir o ambiente atual,
+// sem precisar de rebuild.
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
