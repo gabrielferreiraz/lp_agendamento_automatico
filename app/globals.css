@@ -37,7 +37,10 @@ body {
 .bg-blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(90px);
+  /* 60px em vez de 90px — em celular intermediário, o blur é o maior
+     custo de GPU dessa camada (mais caro que o tamanho dos blobs em si).
+     Reduzir o raio corta esse custo bastante sem o efeito sumir. */
+  filter: blur(60px);
   will-change: transform;
 }
 
@@ -106,11 +109,17 @@ body {
    translúcido + blur por cima do gradiente do body, borda sutil pra dar
    profundidade sem depender de sombra pesada. */
 .glass-card {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
   border: 1px solid var(--glass-border);
   border-radius: 1.75rem;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* 14px em vez de 20px — este cartão é o elemento que mais se move
+     (StepTransition anima ele a cada troca de pergunta), e recalcular um
+     blur de fundo enquanto o elemento se desloca é o combo mais caro de
+     GPU que tem em CSS. Compensei o blur menor com um pouco mais de
+     opacidade no fundo (0.06 → 0.08), pra continuar lendo como vidro
+     mesmo desfocando menos. */
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   box-shadow:
     0 8px 32px rgba(0, 0, 0, 0.35),
     inset 0 1px 0 rgba(255, 255, 255, 0.08);
