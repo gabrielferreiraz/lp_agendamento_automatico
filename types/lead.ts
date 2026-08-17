@@ -78,10 +78,24 @@ export type CreateAppointmentRequest = {
 
 export type AvailabilitySlot = { time: string; available: boolean };
 
-export type AvailabilityResponse = {
+// Resposta crua de 1 dia específico, no formato que a API do CRM devolve
+// (GET /api/v1/availability?consultorId=...&date=...).
+export type CrmDayAvailability = {
+  consultorId: string;
   date: string;
   timezone: string;
   slots: AvailabilitySlot[];
+  googleCalendarConnected: boolean;
+};
+
+// Resposta da nossa rota /api/availability — sempre os 2 dias candidatos
+// (hoje + próximo dia útil), prontos pro calendário. `hasAvailability`
+// já vem calculado (pelo menos 1 slot livre) pra colorir o dia no
+// calendário sem o client precisar reduzir o array de slots sozinho.
+export type AvailabilityCalendarResponse = {
+  timezone: string;
+  googleCalendarConnected: boolean;
+  days: { date: string; slots: AvailabilitySlot[]; hasAvailability: boolean }[];
 };
 
 // Body de POST /api/notify — dispara a mensagem de WhatsApp via n8n.
@@ -92,5 +106,16 @@ export type NotifyRequest = QualificationAnswers & {
   agendado: boolean;
   data?: string; // YYYY-MM-DD, só quando agendado === true
   hora?: string; // HH:MM, só quando agendado === true
+  // Preenchido só quando o lead usa "nenhum desses horários funciona" —
+  // texto livre pro consultor coordenar manualmente, nunca vira reserva
+  // automática (ver StepAgendamento/lib/crm.ts's appendDealNote).
+  preferenciaHorario?: string;
   tracking?: TrackingParams;
+};
+
+// Body de POST /api/deal-note — anota uma preferência de horário livre
+// na descrição do negócio já criado (não cria agendamento).
+export type DealNoteRequest = {
+  dealId: string;
+  note: string;
 };

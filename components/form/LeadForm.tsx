@@ -58,6 +58,7 @@ export function LeadForm() {
   const [confirming, setConfirming] = useState(false);
   const [schedError, setSchedError] = useState<string | null>(null);
   const [scheduled, setScheduled] = useState<{ date: string; time: string } | null>(null);
+  const [savingOutro, setSavingOutro] = useState(false);
 
   // Retoma um preenchimento interrompido (reload sem querer, aba fechada
   // por engano) logo depois do primeiro paint — a etapa 1 já apareceu
@@ -192,17 +193,43 @@ export function LeadForm() {
     }
   }
 
-  function skipAgendamento() {
+  // "Nenhum desses horários funciona pra mim" — nunca cria agendamento
+  // automático (os slots são fixos, texto livre não bate na grade). Só
+  // anota a preferência na descrição do negócio já existente (best-effort,
+  // ver /api/deal-note) e manda a mesma informação pro consultor via
+  // WhatsApp — mesmo se a anotação no CRM falhar, o consultor ainda fica
+  // sabendo.
+  async function handleOutroHorario(texto: string) {
     markScheduled();
-    if (dealId && contactId && answers) {
-      fetch("/api/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...answers, dealId, contactId, agendado: false, tracking }),
-      }).catch(() => {});
+    setSavingOutro(true);
+    try {
+      const notaLimpa = texto.trim();
+      if (dealId && notaLimpa) {
+        fetch("/api/deal-note", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ dealId, note: `Horário preferido (informado pelo lead): ${notaLimpa}` }),
+        }).catch(() => {});
+      }
+      if (dealId && contactId && answers) {
+        fetch("/api/notify", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ...answers,
+            dealId,
+            contactId,
+            agendado: false,
+            preferenciaHorario: notaLimpa || undefined,
+            tracking,
+          }),
+        }).catch(() => {});
+      }
+      setScheduled(null);
+      goToStep(6);
+    } finally {
+      setSavingOutro(false);
     }
-    setScheduled(null);
-    goToStep(6);
   }
 
   // Sem gate de "espera hidratar" aqui de propósito: a grande maioria de
@@ -286,8 +313,9 @@ export function LeadForm() {
           step={5}
           total={TOTAL_STEPS}
           onConfirm={confirmAgendamento}
-          onSkip={skipAgendamento}
+          onOutroHorario={handleOutroHorario}
           confirming={confirming}
+          savingOutro={savingOutro}
           error={schedError}
         />
       );

@@ -1,6 +1,6 @@
 import { env } from "./env";
 import { rateLimit } from "./rate-limit";
-import type { AvailabilityResponse, QualificationAnswers, TrackingParams } from "@/types/lead";
+import type { AvailabilityCalendarResponse, CrmDayAvailability, QualificationAnswers, TrackingParams } from "@/types/lead";
 
 // Cliente fino pra API v1 do CRM (crm.reoboteconsorcios.com.br/docs).
 // Cada função aqui espelha 1 endpoint documentado — nenhuma lógica de
@@ -139,10 +139,86 @@ export async function createLeadDeal(
   throw new CrmApiError("Falha ao criar negócio", 500);
 }
 
-export async function getAvailability(consultorId: string): Promise<AvailabilityResponse> {
+// `date` (YYYY-MM-DD) opcional — sem ele, o CRM usa o comportamento
+// padrão dele (cascata a partir de hoje). Com ele, pede a grade de um
+// dia específico — é o que getAvailabilityCalendar usa pra montar os 2
+// dias do calendário (hoje + próximo dia útil) de forma independente.
+//
+// Depende da mudança pedida ao CRM pra aceitar `?date=` — enquanto isso
+// não estiver no ar lá, o parâmetro é ignorado e sempre volta a mesma
+// resposta (a cascata antiga), então os 2 dias do calendário aparecerão
+// iguais até o deploy deles.
+export async function getAvailability(consultorId: string, date?: string): Promise<CrmDayAvailability> {
   assertGlobalCrmBudget("availability", 50, 60_000); // teto real do CRM: 60/min
 
-  return crmFetch<AvailabilityResponse>(`/api/v1/availability?consultorId=${encodeURIComponent(consultorId)}`);
+  const qs = new URLSearchParams({ consultorId });
+  if (date) qs.set("date", date);
+  return crmFetch<CrmDayAvailability>(`/api/v1/availability?${qs.toString()}`);
+}
+
+// Campo Grande é sempre UTC-4 (sem horário de verão desde 2019) — mesma
+// premissa de lib/timezone.ts, só que aqui roda no servidor.
+const CRM_UTC_OFFSET_HOURS = 4;
+
+function brazilDateKey(date: Date): string {
+  const shifted = new Date(date.getTime() - CRM_UTC_OFFSET_HOURS * 60 * 60 * 1000);
+  const y = shifted.getUTCFullYear();
+  const m = String(shifted.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(shifted.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+function isBusinessDay(dateKey: string): boolean {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const weekday = new Date(Date.UTC(y, m - 1, d, 12)).getUTCDay();
+  return weekday >= 1 && weekday <= 5;
+}
+
+function addDaysToKey(dateKey: string, delta: number): string {
+  const [y, m, d] = dateKey.split("-").map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + delta));
+  return `${next.getUTCFullYear()}-${String(next.getUTCMonth() + 1).padStart(2, "0")}-${String(next.getUTCDate()).padStart(2, "0")}`;
+}
+
+function nextBusinessDayAfter(dateKey: string): string {
+  let candidate = addDaysToKey(dateKey, 1);
+  while (!isBusinessDay(candidate)) candidate = addDaysToKey(candidate, 1);
+  return candidate;
+}
+
+// Monta os 2 dias candidatos pro calendário: hoje (se for dia útil) e o
+// próximo dia útil depois dele. Mesma regra de negócio do CRM
+// (lib/scheduling/meeting-availability.ts's earliestBookableDate lá),
+// replicada aqui só pra saber QUAIS datas perguntar — quem decide de
+// verdade se cada uma tem vaga é sempre a resposta do CRM, nunca essa
+// função.
+export async function getAvailabilityCalendar(consultorId: string): Promise<AvailabilityCalendarResponse> {
+  const todayKey = brazilDateKey(new Date());
+  const day1 = isBusinessDay(todayKey) ? todayKey : nextBusinessDayAfter(todayKey);
+  const day2 = nextBusinessDayAfter(day1);
+
+  const [d1, d2] = await Promise.all([getAvailability(consultorId, day1), getAvailability(consultorId, day2)]);
+
+  return {
+    timezone: d1.timezone,
+    googleCalendarConnected: d1.googleCalendarConnected,
+    days: [d1, d2].map((d) => ({ date: d.date, slots: d.slots, hasAvailability: d.slots.some((s) => s.available) })),
+  };
+}
+
+// TODO: ajustar path/formato assim que o CRM confirmar o endpoint pedido
+// (PATCH /api/v1/deals/:id com `appendDescription`, ou um endpoint
+// dedicado tipo POST /api/v1/deals/:id/note) — este é o formato que
+// sugerimos como preferência, ainda não confirmado. Até lá, chamadas
+// aqui vão falhar com 404, e quem chama (app/api/deal-note/route.ts)
+// já trata isso como best-effort sem quebrar o resto do fluxo.
+export async function appendDealNote(dealId: string, note: string): Promise<void> {
+  assertGlobalCrmBudget("deal-note", 25, 60_000);
+
+  await crmFetch(`/api/v1/deals/${encodeURIComponent(dealId)}`, {
+    method: "PATCH",
+    body: JSON.stringify({ appendDescription: note }),
+  });
 }
 
 export async function createAppointment(params: {

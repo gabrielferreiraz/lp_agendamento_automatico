@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { getAvailability, CrmApiError } from "@/lib/crm";
+import { getAvailabilityCalendar, CrmApiError } from "@/lib/crm";
 import { env } from "@/lib/env";
 import { rateLimit, getClientIp } from "@/lib/rate-limit";
 
 export const dynamic = "force-dynamic";
 
-// GET simples, sem parâmetro — o consultor é fixo (Vinícius) enquanto só
-// ele recebe leads. Quando entrar o 2º consultor, isso vira
-// ?consultorId=... escolhido por regra de distribuição (round-robin, time,
-// etc.), mas o contrato de resposta não muda.
+// Sempre devolve os 2 dias candidatos (hoje + próximo dia útil), prontos
+// pro calendário — o consultor é fixo (Vinícius) enquanto só ele recebe
+// leads. Quando entrar o 2º consultor, isso vira ?consultorId=... escolhido
+// por regra de distribuição, mas o contrato de resposta não muda.
 export async function GET(req: Request) {
   const ip = getClientIp(req);
   const limited = rateLimit(`availability:${ip}`, 20, 60 * 1000);
@@ -17,8 +17,8 @@ export async function GET(req: Request) {
   }
 
   try {
-    const availability = await getAvailability(env.crmOwnerId());
-    return NextResponse.json(availability);
+    const calendar = await getAvailabilityCalendar(env.crmOwnerId());
+    return NextResponse.json(calendar);
   } catch (err) {
     if (err instanceof CrmApiError) {
       if (err.status === 429) return NextResponse.json({ error: "Muitas tentativas, aguarde um instante." }, { status: 429 });
