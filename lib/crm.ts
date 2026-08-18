@@ -206,18 +206,16 @@ export async function getAvailabilityCalendar(consultorId: string): Promise<Avai
   };
 }
 
-// TODO: ajustar path/formato assim que o CRM confirmar o endpoint pedido
-// (PATCH /api/v1/deals/:id com `appendDescription`, ou um endpoint
-// dedicado tipo POST /api/v1/deals/:id/note) — este é o formato que
-// sugerimos como preferência, ainda não confirmado. Até lá, chamadas
-// aqui vão falhar com 404, e quem chama (app/api/deal-note/route.ts)
-// já trata isso como best-effort sem quebrar o resto do fluxo.
+// PATCH /api/v1/deals/:id — anexa (não sobrescreve) uma linha com
+// data/hora na descrição do negócio já existente. Máximo 2000
+// caracteres no `note` (bem acima do limite de 300 que já validamos em
+// app/api/deal-note/route.ts, então nunca estoura por aqui).
 export async function appendDealNote(dealId: string, note: string): Promise<void> {
   assertGlobalCrmBudget("deal-note", 25, 60_000);
 
   await crmFetch(`/api/v1/deals/${encodeURIComponent(dealId)}`, {
     method: "PATCH",
-    body: JSON.stringify({ appendDescription: note }),
+    body: JSON.stringify({ note }),
   });
 }
 
