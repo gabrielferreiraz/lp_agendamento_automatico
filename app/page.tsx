@@ -4,7 +4,7 @@ import { InAppBrowserTip } from "@/components/InAppBrowserTip";
 
 export default function Home() {
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-8 px-4 py-12 sm:py-16">
+    <main className="flex flex-1 flex-col items-center gap-8 px-4 py-12 sm:justify-center sm:py-16">
       <InAppBrowserTip />
 
       <div className="flex flex-col items-center gap-3 text-center">

@@ -29,8 +29,12 @@ export function MotivoStep({
         </>
       }
     >
+      {/* Sem autoFocus de propósito — abrir o teclado sozinho bem na hora
+          da transição de etapa (junto com o layout ainda se ajustando)
+          era o que fazia o teclado cobrir a caixa de texto no celular.
+          O toque manual do lead pra focar já dá tempo do layout assentar
+          antes do teclado subir. */}
       <textarea
-        autoFocus
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Insira sua resposta."

@@ -59,8 +59,10 @@ export function ContatoStep({
     >
       <div className="flex flex-col gap-4">
         <Field label="Nome completo">
+          {/* Sem autoFocus — mesmo motivo do MotivoStep: abrir o teclado
+              sozinho durante a transição de etapa é o que fazia o campo
+              ficar escondido atrás dele no celular. */}
           <input
-            autoFocus
             name="name"
             autoComplete="name"
             value={nome}
