@@ -97,17 +97,15 @@ export async function createLeadDeal(
   const body = JSON.stringify({
     contact: {
       name: answers.nome,
-      phone: answers.telefone,
-      // Mandar também como `whatsapp` (mesmo valor) não é redundância — o
-      // dedupe de contato do CRM (findDuplicateContact) só procura por
-      // WhatsApp existente quando a própria chamada manda esse campo.
-      // Como o CRM guarda todo telefone-só como WhatsApp internamente
-      // ("todo celular também é WhatsApp"), mandar só `phone` faz toda
-      // resposta buscar errado e nunca achar o contato que ele mesmo já
-      // criou — aí tenta recriar e esbarra na trava de duplicidade
-      // (era a causa real do "Conflito ao criar contato" persistente,
-      // não uma corrida passageira). Mandando os dois campos, a busca
-      // encontra certo desde a primeira vez.
+      // Só `whatsapp`, de propósito — não `phone`. O campo do formulário é
+      // literalmente o WhatsApp da pessoa ("Telefone (WhatsApp)"), então é
+      // isso que deve aparecer no CRM, sem duplicar no campo "Celular"
+      // também (ver lib/phone-normalize.ts's fallbackWhatsappToPhone no
+      // crm-reobote: mandando só `whatsapp`, "Celular" fica vazio e o
+      // dedupe de contato ainda busca certo — diferente de mandar só
+      // `phone`, que É o bug original do "Conflito ao criar contato"
+      // persistente, porque o CRM guarda telefone-só como WhatsApp
+      // internamente e a busca de duplicata não olhava lá sem esse campo).
       whatsapp: answers.telefone,
       source: "Landing page - Meta Ads",
     },
