@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import { MotionProvider } from "@/components/MotionProvider";
 import { MetaPixel } from "@/components/MetaPixel";
 import { Clarity } from "@/components/Clarity";
+import { PauseAnimationsWhenHidden } from "@/components/PauseAnimationsWhenHidden";
 import "./globals.css";
 
 const inter = Inter({
@@ -31,6 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       <body className="min-h-full flex flex-col">
         <MetaPixel />
         <Clarity />
+        <PauseAnimationsWhenHidden />
         <div className="bg-blobs" aria-hidden="true">
           <div className="bg-blob bg-blob-1" />
           <div className="bg-blob bg-blob-2" />

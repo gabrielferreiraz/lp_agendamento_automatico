@@ -105,6 +105,14 @@ body {
   }
 }
 
+/* Classe ligada por PauseAnimationsWhenHidden.tsx via Page Visibility
+   API — pausa (não remove) as animações contínuas assim que a aba sai
+   de foco, e retoma de onde parou quando volta. */
+.page-hidden .bg-blob,
+.page-hidden .glass-card::before {
+  animation-play-state: paused;
+}
+
 /* Cartão de vidro reutilizado em todas as etapas do formulário — fundo
    translúcido + blur por cima do gradiente do body, borda sutil pra dar
    profundidade sem depender de sombra pesada. */
