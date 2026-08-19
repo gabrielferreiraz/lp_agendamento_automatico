@@ -4,6 +4,7 @@ import { MotionProvider } from "@/components/MotionProvider";
 import { MetaPixel } from "@/components/MetaPixel";
 import { Clarity } from "@/components/Clarity";
 import { PauseAnimationsWhenHidden } from "@/components/PauseAnimationsWhenHidden";
+import { InAppBrowserRedirect } from "@/components/InAppBrowserRedirect";
 import "./globals.css";
 
 const inter = Inter({
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${inter.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        <InAppBrowserRedirect />
         <MetaPixel />
         <Clarity />
         <PauseAnimationsWhenHidden />
