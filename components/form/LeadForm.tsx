@@ -28,12 +28,8 @@ const TOTAL_STEPS = 7;
 export function LeadForm() {
   const [hydrated, setHydrated] = useState(false);
   const [step, setStep] = useState(0);
-  // 1 = avançando (desliza da direita), -1 = voltando (desliza da
-  // esquerda) — StepTransition usa isso pra saber de que lado animar.
-  const [direction, setDirection] = useState(1);
 
   function goToStep(next: number) {
-    setDirection(next > step ? 1 : -1);
     setStep(next);
   }
 
@@ -237,8 +233,8 @@ export function LeadForm() {
   // imediatamente (inclusive no HTML estático, antes do JS carregar) é o
   // que importa pra velocidade percebida. Os poucos casos com progresso
   // salvo (ver efeito acima) trocam de etapa um instante depois do
-  // primeiro paint — a própria transição entre etapas (StepTransition) já
-  // deixa essa troca suave, em vez de aparecer quebrada.
+  // primeiro paint — troca instantânea (sem animação, ver StepTransition),
+  // então não tem nada "quebrando" visualmente nessa troca.
   let content;
   switch (step) {
     case 0:
@@ -324,9 +320,5 @@ export function LeadForm() {
       content = <ConfirmacaoStep scheduled={scheduled} />;
   }
 
-  return (
-    <StepTransition step={step} direction={direction}>
-      {content}
-    </StepTransition>
-  );
+  return <StepTransition step={step}>{content}</StepTransition>;
 }

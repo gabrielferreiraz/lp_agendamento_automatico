@@ -1,22 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { m } from "framer-motion";
 import { OptionCard } from "../OptionCard";
 import { CalendarPicker } from "../CalendarPicker";
 import { StepShell, PrimaryButton, BackLink } from "../StepShell";
 import { formatSlotTimeLocal, formatDateLabelLocal } from "@/lib/timezone";
 import type { AvailabilityCalendarResponse } from "@/types/lead";
-
-const listVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 },
-};
 
 export function AgendamentoStep({
   step,
@@ -110,18 +99,17 @@ export function AgendamentoStep({
       }
     >
       {showOutro ? (
-        <m.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}>
+        <div>
           <p className="mb-3 text-sm text-white/60">Tudo bem — nos diga um dia e horário melhor pra você que o consultor tenta se ajustar.</p>
           <textarea
-            autoFocus
             value={outroTexto}
             onChange={(e) => setOutroTexto(e.target.value)}
             placeholder="Ex: quinta à tarde, ou depois das 18h..."
             rows={4}
             maxLength={300}
-            className="w-full resize-none rounded-2xl border border-white/12 bg-white/5 px-4 py-3.5 text-[15px] text-white placeholder:text-white/35 outline-none transition-colors focus:border-blue-400/60 focus:bg-white/[0.07]"
+            className="w-full resize-none rounded-2xl border border-white/12 bg-white/5 px-4 py-3.5 text-[15px] text-white placeholder:text-white/35 outline-none focus:border-blue-400/60"
           />
-        </m.div>
+        </div>
       ) : (
         <>
           {!calendar && !loadError && (
@@ -154,17 +142,16 @@ export function AgendamentoStep({
               />
 
               {selectedDay && selectedDay.hasAvailability ? (
-                <m.div className="flex flex-col gap-3" variants={listVariants} initial="hidden" animate="show">
+                <div className="flex flex-col gap-3">
                   {selectedDay.slots.map((slot) => (
-                    <m.div key={slot.time} variants={itemVariants}>
-                      <OptionCard
-                        label={slot.available ? formatSlotTimeLocal(selectedDay.date, slot.time) : `${formatSlotTimeLocal(selectedDay.date, slot.time)} · indisponível`}
-                        selected={selectedTime === slot.time}
-                        onClick={() => slot.available && setSelectedTime(slot.time)}
-                      />
-                    </m.div>
+                    <OptionCard
+                      key={slot.time}
+                      label={slot.available ? formatSlotTimeLocal(selectedDay.date, slot.time) : `${formatSlotTimeLocal(selectedDay.date, slot.time)} · indisponível`}
+                      selected={selectedTime === slot.time}
+                      onClick={() => slot.available && setSelectedTime(slot.time)}
+                    />
                   ))}
-                </m.div>
+                </div>
               ) : (
                 <p className="text-center text-sm text-white/50">Sem horários livres nesse dia — escolha o outro dia em destaque no calendário.</p>
               )}

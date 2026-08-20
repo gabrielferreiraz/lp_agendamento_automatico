@@ -5,7 +5,7 @@
   --foreground: #f1f5f9;
   --accent: #3b82f6;
   --accent-strong: #2563eb;
-  --glass-border: rgba(255, 255, 255, 0.14);
+  --card-border: rgba(255, 255, 255, 0.14);
 }
 
 @theme inline {
@@ -15,183 +15,39 @@
   --font-sans: var(--font-inter);
 }
 
+/* Visual deliberadamente simples: sem blur, sem animação de fundo, sem
+   glassmorphism. Removido depois de ver no Clarity/heatmap um padrão
+   forte de toque no texto errado (não-clicável) em vez dos botões reais,
+   em sessões vindas do navegador embutido do Facebook — sinal de que o
+   app não estava terminando de renderizar/responder em aparelhos mais
+   limitados, e o visual pesado (blur, animação contínua, JS extra pra
+   cada gesto) era peso desnecessário competindo justamente com o que
+   mais importa: o formulário aparecer e responder rápido. */
 body {
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
   min-height: 100dvh;
-  background: #070b14;
+  background: #0b1220;
 }
 
-/* Camada decorativa fixa atrás de tudo — 3 manchas de cor borradas que
-   derivam devagar. É o que dá "vida" ao fundo sem competir com o
-   formulário (fica em -z-index, com blur pesado, então nunca vira algo
-   nítido o suficiente pra distrair). */
-.bg-blobs {
-  position: fixed;
-  inset: 0;
-  overflow: hidden;
-  z-index: -1;
-  pointer-events: none;
+.card {
+  background: #131b2e;
+  border: 1px solid var(--card-border);
+  border-radius: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
 }
 
-.bg-blob {
-  position: absolute;
-  border-radius: 9999px;
-  /* 60px em vez de 90px — em celular intermediário, o blur é o maior
-     custo de GPU dessa camada (mais caro que o tamanho dos blobs em si).
-     Reduzir o raio corta esse custo bastante sem o efeito sumir. */
-  filter: blur(60px);
-  will-change: transform;
-}
-
-.bg-blob-1 {
-  width: 42rem;
-  height: 42rem;
-  top: -12%;
-  left: -12%;
-  background: radial-gradient(circle, rgba(59, 130, 246, 0.55), transparent 70%);
-  animation: drift-1 22s ease-in-out infinite;
-}
-
-.bg-blob-2 {
-  width: 36rem;
-  height: 36rem;
-  top: 8%;
-  right: -14%;
-  background: radial-gradient(circle, rgba(16, 185, 129, 0.4), transparent 70%);
-  animation: drift-2 26s ease-in-out infinite;
-}
-
-.bg-blob-3 {
-  width: 46rem;
-  height: 46rem;
-  bottom: -20%;
-  left: 18%;
-  background: radial-gradient(circle, rgba(99, 102, 241, 0.5), transparent 70%);
-  animation: drift-3 30s ease-in-out infinite;
-}
-
-@keyframes drift-1 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(6%, 8%) scale(1.08);
-  }
-}
-@keyframes drift-2 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-8%, 6%) scale(1.05);
-  }
-}
-@keyframes drift-3 {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(-5%, -8%) scale(1.1);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bg-blob {
-    animation: none;
-  }
-}
-
-/* Classe ligada por PauseAnimationsWhenHidden.tsx via Page Visibility
-   API — pausa (não remove) as animações contínuas assim que a aba sai
-   de foco, e retoma de onde parou quando volta. */
-.page-hidden .bg-blob,
-.page-hidden .glass-card::before {
-  animation-play-state: paused;
-}
-
-/* Cartão de vidro reutilizado em todas as etapas do formulário — fundo
-   translúcido + blur por cima do gradiente do body, borda sutil pra dar
-   profundidade sem depender de sombra pesada. */
-.glass-card {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--glass-border);
-  border-radius: 1.75rem;
-  /* 14px em vez de 20px — este cartão é o elemento que mais se move
-     (StepTransition anima ele a cada troca de pergunta), e recalcular um
-     blur de fundo enquanto o elemento se desloca é o combo mais caro de
-     GPU que tem em CSS. Compensei o blur menor com um pouco mais de
-     opacidade no fundo (0.06 → 0.08), pra continuar lendo como vidro
-     mesmo desfocando menos. */
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.35),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-}
-
-.glass-option {
-  background: rgba(255, 255, 255, 0.04);
+.option {
+  background: #182238;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  transition:
-    background-color 150ms ease,
-    border-color 150ms ease,
-    transform 150ms ease;
+  transition: border-color 120ms ease;
 }
 
-.glass-option:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(255, 255, 255, 0.22);
-}
-
-.glass-option[data-selected="true"] {
-  background: rgba(59, 130, 246, 0.18);
+.option:active {
   border-color: rgba(96, 165, 250, 0.6);
 }
 
-.glass-option:active {
-  transform: scale(0.99);
-}
-
-/* Brilho sutil e pulsante atrás do cartão de vidro — dá profundidade sem
-   ser uma animação "grande" o suficiente pra puxar o olho pra longe do
-   conteúdo do formulário. */
-.glass-card {
-  position: relative;
-}
-
-.glass-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, rgba(96, 165, 250, 0.5), transparent 40%, rgba(52, 211, 153, 0.35));
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  opacity: 0.6;
-  animation: glow-pulse 5s ease-in-out infinite;
-  pointer-events: none;
-}
-
-@keyframes glow-pulse {
-  0%,
-  100% {
-    opacity: 0.35;
-  }
-  50% {
-    opacity: 0.75;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .glass-card::before {
-    animation: none;
-  }
+.option[data-selected="true"] {
+  background: rgba(59, 130, 246, 0.18);
+  border-color: rgba(96, 165, 250, 0.6);
 }

@@ -1,16 +1,5 @@
-import { m } from "framer-motion";
 import { OptionCard } from "../OptionCard";
 import { StepShell, PrimaryButton, BackLink } from "../StepShell";
-
-const listVariants = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.06, delayChildren: 0.05 } },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 10 },
-  show: { opacity: 1, y: 0 },
-};
 
 export function ChoiceStep<T extends string>({
   step,
@@ -45,13 +34,11 @@ export function ChoiceStep<T extends string>({
         </>
       }
     >
-      <m.div className="flex flex-col gap-3" variants={listVariants} initial="hidden" animate="show">
+      <div className="flex flex-col gap-3">
         {options.map((opt) => (
-          <m.div key={opt} variants={itemVariants}>
-            <OptionCard label={opt} selected={value === opt} onClick={() => onChange(opt)} />
-          </m.div>
+          <OptionCard key={opt} label={opt} selected={value === opt} onClick={() => onChange(opt)} />
         ))}
-      </m.div>
+      </div>
     </StepShell>
   );
 }

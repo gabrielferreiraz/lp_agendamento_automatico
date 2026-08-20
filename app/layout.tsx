@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { MotionProvider } from "@/components/MotionProvider";
 import { MetaPixel } from "@/components/MetaPixel";
 import { Clarity } from "@/components/Clarity";
-import { PauseAnimationsWhenHidden } from "@/components/PauseAnimationsWhenHidden";
 import { InAppBrowserRedirect } from "@/components/InAppBrowserRedirect";
 import "./globals.css";
 
@@ -34,13 +32,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <InAppBrowserRedirect />
         <MetaPixel />
         <Clarity />
-        <PauseAnimationsWhenHidden />
-        <div className="bg-blobs" aria-hidden="true">
-          <div className="bg-blob bg-blob-1" />
-          <div className="bg-blob bg-blob-2" />
-          <div className="bg-blob bg-blob-3" />
-        </div>
-        <MotionProvider>{children}</MotionProvider>
+        {children}
       </body>
     </html>
   );

@@ -12,9 +12,9 @@ export function Clarity() {
     // "lazyOnload" em vez de "afterInteractive": o Clarity é só
     // diagnóstico (gravação de sessão), não precisa disputar o momento
     // mais crítico da página (logo depois de interativa, quando o lead
-    // costuma tocar no primeiro botão) com o Pixel/framer-motion —
-    // reduz a chance de contribuir pra travadinha justo na hora que
-    // mais importa, principalmente em navegador embutido mais limitado
+    // costuma tocar no primeiro botão) com o Pixel — reduz a chance de
+    // contribuir pra travadinha justo na hora que mais importa,
+    // principalmente em navegador embutido mais limitado
     // (Facebook/Instagram).
     <Script id="ms-clarity" strategy="lazyOnload">
       {`

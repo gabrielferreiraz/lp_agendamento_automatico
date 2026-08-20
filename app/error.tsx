@@ -17,7 +17,7 @@ export default function Error({ error, reset }: { error: Error & { digest?: stri
 
   return (
     <main className="flex flex-1 flex-col items-center justify-center gap-6 px-4 py-12 text-center">
-      <div className="glass-card w-full max-w-md p-8">
+      <div className="card w-full max-w-md p-8">
         <h2 className="text-xl font-semibold text-white">Algo não carregou direito</h2>
         <p className="mt-2 text-sm text-white/60">
           Isso pode acontecer dependendo do aplicativo usado pra abrir esta página. Toque no botão abaixo pra tentar de novo.

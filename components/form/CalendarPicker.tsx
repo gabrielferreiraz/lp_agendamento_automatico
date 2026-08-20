@@ -1,7 +1,3 @@
-"use client";
-
-import { m } from "framer-motion";
-
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
 function pad(n: number): string {
@@ -50,23 +46,22 @@ export function CalendarPicker({
           const isSelected = selectedDate === dateKey;
 
           return (
-            <m.button
+            <button
               key={dateKey}
               type="button"
               disabled={!isAvailable}
               onClick={() => onSelectDate(dateKey)}
-              whileTap={isAvailable ? { scale: 0.92 } : undefined}
               className={[
-                "aspect-square rounded-lg text-[13px] font-medium transition-colors",
+                "aspect-square rounded-lg text-[13px] font-medium",
                 isSelected
                   ? "bg-blue-500 text-white"
                   : isAvailable
-                    ? "bg-emerald-400/15 text-emerald-300 hover:bg-emerald-400/25 cursor-pointer"
+                    ? "bg-emerald-400/15 text-emerald-300 active:bg-emerald-400/30 cursor-pointer"
                     : "bg-transparent text-white/20 cursor-not-allowed",
               ].join(" ")}
             >
               {day}
-            </m.button>
+            </button>
           );
         })}
       </div>
