@@ -18,6 +18,11 @@ import Script from "next/script";
 // nem estar instalado. Sem isso funcionar (iOS, ou algum Android que
 // bloqueia o esquema `intent://`), o aviso visível (InAppBrowserTip)
 // continua como reforço.
+//
+// Manda um beacon pro /api/diag em TODA visita (não só quando redireciona)
+// — confirma de verdade, consultável depois, se a detecção Android/in-app
+// está batendo com o tráfego real, em vez de depender de interpretar o
+// Clarity (que não expõe User-Agent bruto).
 export function InAppBrowserRedirect() {
   return (
     <Script id="in-app-browser-redirect" strategy="beforeInteractive">
@@ -27,7 +32,22 @@ export function InAppBrowserRedirect() {
             var ua = navigator.userAgent || "";
             var isAndroid = /Android/i.test(ua);
             var isInAppBrowser = /FBAN|FBAV|FB_IAB|Instagram/i.test(ua);
-            if (!isAndroid || !isInAppBrowser) return;
+            var willRedirect = isAndroid && isInAppBrowser;
+
+            try {
+              var payload = JSON.stringify({
+                ua: ua,
+                isAndroid: isAndroid,
+                isInAppBrowser: isInAppBrowser,
+                redirectAttempted: willRedirect,
+                url: location.href
+              });
+              if (navigator.sendBeacon) {
+                navigator.sendBeacon("/api/diag", new Blob([payload], { type: "application/json" }));
+              }
+            } catch (e) {}
+
+            if (!willRedirect) return;
 
             var url = location.href.replace(/^https?:\\/\\//, "");
             url += (url.indexOf("?") === -1 ? "?" : "&") + "via=inapp-redirect";
