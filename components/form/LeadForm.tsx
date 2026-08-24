@@ -19,6 +19,8 @@ import {
   type QualificationAnswers,
 } from "@/types/lead";
 
+import { useAbandonedLead } from "@/lib/use-abandoned-lead";
+
 const TOTAL_STEPS = 5;
 
 export function LeadForm() {
@@ -52,14 +54,7 @@ export function LeadForm() {
   const [scheduled, setScheduled] = useState<{ date: string; time: string } | null>(null);
   const [savingOutro, setSavingOutro] = useState(false);
 
-  // Retoma um preenchimento interrompido (reload sem querer, aba fechada
-  // por engano) logo depois do primeiro paint — a etapa 1 já apareceu
-  // (ver comentário perto do `switch` mais abaixo), então isso só troca
-  // de etapa quando existe progresso salvo de verdade.
   useEffect(() => {
-    // Lê localStorage + URL/cookies (sistemas externos ao React) uma vez,
-    // no mount — não dá pra calcular isso durante o render porque este
-    // componente também é renderizado no servidor, onde eles não existem.
     const saved = loadPersistedState();
     if (saved) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -78,10 +73,6 @@ export function LeadForm() {
     setHydrated(true);
   }, []);
 
-  // Salva a cada mudança relevante — barato (poucos KB, escrita síncrona)
-  // e garante que um reload no meio de qualquer etapa recupera exatamente
-  // de onde parou, inclusive se já tiver `dealId` (não recria o negócio
-  // no CRM ao retomar, só continua pro agendamento).
   useEffect(() => {
     if (!hydrated) return;
     savePersistedState({
@@ -110,20 +101,25 @@ export function LeadForm() {
 
   const { markScheduled } = useExitNotify(notifyPayload, step === 3 && !!notifyPayload);
 
-  // Trava síncrona, separada do `loadingLead` (estado) — um duplo toque
-  // rápido no botão dispara os dois cliques antes do React terminar de
-  // re-renderizar com `disabled`, então dava pra mandar dois POST /api/lead
-  // com o mesmo telefone quase juntos. Isso é justamente o que faz o CRM
-  // esbarrar numa condição de corrida dele (cria o mesmo contato duas vezes
-  // em paralelo) e devolver "Conflito ao criar contato". A ref é checada e
-  // setada antes de qualquer `await`, então bloqueia o segundo clique de
-  // verdade, sem depender do ciclo de render.
+  // Gatilho invisível para leads que param no Motivo e desistem.
+  const abandonedPayload = useMemo(() => {
+    if (!answers) return null;
+    return { ...answers, tracking, eventId: leadEventId };
+  }, [answers, tracking, leadEventId]);
+
+  const { disarmAbandonedLead } = useAbandonedLead(abandonedPayload, step === 2 && !dealId);
+
   const submittingLeadRef = useRef(false);
 
   async function submitContato() {
+    if (!answers) return;
+    goToStep(2);
+  }
+
+  async function submitMotivo() {
     if (!answers || submittingLeadRef.current) return;
     submittingLeadRef.current = true;
-    setLoadingLead(true);
+    setSavingMotivo(true);
     setLeadError(null);
     try {
       const res = await fetch("/api/lead", {
@@ -136,34 +132,12 @@ export function LeadForm() {
       setDealId(data.dealId);
       setContactId(data.contactId);
       trackPixelEvent("Lead", leadEventId);
-      goToStep(2);
+      disarmAbandonedLead();
+      goToStep(3);
     } catch {
+      // Se falhar o envio ao CRM aqui, mostra erro ao usuário (pode ser problema na API)
       setLeadError("Não foi possível enviar seus dados agora. Tente novamente.");
-      // Só destrava em caso de falha — em caso de sucesso a etapa muda e
-      // este formulário nunca chama submitContato() de novo mesmo assim,
-      // mas destravar também não faz mal nenhum.
       submittingLeadRef.current = false;
-    } finally {
-      setLoadingLead(false);
-    }
-  }
-
-  async function submitMotivo() {
-    if (!dealId || !motivo.trim()) {
-      goToStep(3);
-      return;
-    }
-    setSavingMotivo(true);
-    try {
-      await fetch("/api/deal-note", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ dealId, note: `Motivo informado: ${motivo.trim()}` }),
-      });
-      goToStep(3);
-    } catch {
-      // Falha silenciosa pro usuário, continua pro agendamento.
-      goToStep(3);
     } finally {
       setSavingMotivo(false);
     }
