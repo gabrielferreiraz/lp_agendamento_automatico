@@ -1,6 +1,6 @@
 "use client";
 
-import type { ValorCredito, FaixaParcela, Prazo } from "@/types/lead";
+import type { ValorCredito } from "@/types/lead";
 
 const STORAGE_KEY = "reobote-lead-form-v1";
 // Mesmo prazo do lead-registry no servidor (lib/lead-registry.ts) — não
@@ -14,8 +14,6 @@ export type PersistedFormState = {
   savedAt: number;
   step: number;
   valorCredito?: ValorCredito;
-  faixaParcela?: FaixaParcela;
-  prazo?: Prazo;
   motivo: string;
   nome: string;
   telefone: string;

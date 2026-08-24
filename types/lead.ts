@@ -11,18 +11,7 @@ export const VALOR_CREDITO_OPTIONS = [
   "Acima de 1 milhão",
 ] as const;
 
-export const FAIXA_PARCELA_OPTIONS = ["300 a 500", "500 a 1000", "1000 a 3000", "3000 a 5000"] as const;
-
-export const PRAZO_OPTIONS = [
-  "Compra imediata",
-  "Curto prazo (até 30 dias)",
-  "Médio prazo (até 3 meses)",
-  "Apenas pesquisando por enquanto",
-] as const;
-
 export type ValorCredito = (typeof VALOR_CREDITO_OPTIONS)[number];
-export type FaixaParcela = (typeof FAIXA_PARCELA_OPTIONS)[number];
-export type Prazo = (typeof PRAZO_OPTIONS)[number];
 
 // Parâmetros de rastreio capturados da URL/cookies no carregamento da
 // página — trafegam junto com o lead até o CRM (adAttribution/customFields)
@@ -41,12 +30,10 @@ export type TrackingParams = {
   adSetId?: string;
 };
 
-// Respostas coletadas nos passos 1-5 do formulário (qualificação + contato).
+// Respostas coletadas nos passos iniciais do formulário.
 export type QualificationAnswers = {
   valorCredito: ValorCredito;
-  faixaParcela: FaixaParcela;
-  prazo: Prazo;
-  motivo: string;
+  motivo?: string;
   nome: string;
   telefone: string;
   instagram?: string;

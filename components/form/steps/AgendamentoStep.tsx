@@ -74,7 +74,7 @@ export function AgendamentoStep({
     <StepShell
       step={step}
       total={total}
-      title="Qual o melhor horário pra falarmos com você?"
+      title="Agende uma reunião para detalharmos o plano para conquistar seu patrimônio. Qual o melhor horário?"
       subtitle={selectedDate ? formatDateLabelLocal(selectedDate) : undefined}
       footer={
         !showOutro ? (

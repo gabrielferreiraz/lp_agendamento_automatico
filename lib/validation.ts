@@ -1,4 +1,4 @@
-import { VALOR_CREDITO_OPTIONS, FAIXA_PARCELA_OPTIONS, PRAZO_OPTIONS, type QualificationAnswers } from "@/types/lead";
+import { VALOR_CREDITO_OPTIONS, type QualificationAnswers } from "@/types/lead";
 
 const MAX_NAME_LENGTH = 120;
 const MAX_INSTAGRAM_LENGTH = 60;
@@ -26,14 +26,7 @@ export function validateQualificationAnswers(body: unknown): { ok: true; answers
   if (!(VALOR_CREDITO_OPTIONS as readonly string[]).includes(b.valorCredito as string)) {
     return { ok: false, error: "Valor de crédito inválido" };
   }
-  if (!(FAIXA_PARCELA_OPTIONS as readonly string[]).includes(b.faixaParcela as string)) {
-    return { ok: false, error: "Faixa de parcela inválida" };
-  }
-  if (!(PRAZO_OPTIONS as readonly string[]).includes(b.prazo as string)) {
-    return { ok: false, error: "Prazo inválido" };
-  }
-
-  if (typeof b.motivo !== "string" || b.motivo.length > MAX_MOTIVO_LENGTH) {
+  if (b.motivo !== undefined && (typeof b.motivo !== "string" || b.motivo.length > MAX_MOTIVO_LENGTH)) {
     return { ok: false, error: "Motivo inválido" };
   }
 
@@ -47,9 +40,7 @@ export function validateQualificationAnswers(body: unknown): { ok: true; answers
       nome: b.nome.trim(),
       telefone: b.telefone,
       valorCredito: b.valorCredito as QualificationAnswers["valorCredito"],
-      faixaParcela: b.faixaParcela as QualificationAnswers["faixaParcela"],
-      prazo: b.prazo as QualificationAnswers["prazo"],
-      motivo: b.motivo,
+      motivo: (b.motivo as string | undefined)?.trim() || undefined,
       instagram: (b.instagram as string | undefined)?.trim() || undefined,
     },
   };

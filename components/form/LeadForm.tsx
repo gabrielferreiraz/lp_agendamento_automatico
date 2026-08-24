@@ -13,17 +13,13 @@ import { trackPixelEvent, newEventId } from "@/lib/meta-pixel-client";
 import { loadPersistedState, savePersistedState } from "@/lib/form-persistence";
 import {
   VALOR_CREDITO_OPTIONS,
-  FAIXA_PARCELA_OPTIONS,
-  PRAZO_OPTIONS,
   type ValorCredito,
-  type FaixaParcela,
-  type Prazo,
   type TrackingParams,
   type CreateLeadResponse,
   type QualificationAnswers,
 } from "@/types/lead";
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 5;
 
 export function LeadForm() {
   const [hydrated, setHydrated] = useState(false);
@@ -34,8 +30,6 @@ export function LeadForm() {
   }
 
   const [valorCredito, setValorCredito] = useState<ValorCredito>();
-  const [faixaParcela, setFaixaParcela] = useState<FaixaParcela>();
-  const [prazo, setPrazo] = useState<Prazo>();
   const [motivo, setMotivo] = useState("");
   const [nome, setNome] = useState("");
   const [telefone, setTelefone] = useState("");
@@ -50,6 +44,8 @@ export function LeadForm() {
   const [contactId, setContactId] = useState<string | null>(null);
   const [loadingLead, setLoadingLead] = useState(false);
   const [leadError, setLeadError] = useState<string | null>(null);
+
+  const [savingMotivo, setSavingMotivo] = useState(false);
 
   const [confirming, setConfirming] = useState(false);
   const [schedError, setSchedError] = useState<string | null>(null);
@@ -69,8 +65,6 @@ export function LeadForm() {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setStep(saved.step);
       setValorCredito(saved.valorCredito);
-      setFaixaParcela(saved.faixaParcela);
-      setPrazo(saved.prazo);
       setMotivo(saved.motivo);
       setNome(saved.nome);
       setTelefone(saved.telefone);
@@ -93,8 +87,6 @@ export function LeadForm() {
     savePersistedState({
       step,
       valorCredito,
-      faixaParcela,
-      prazo,
       motivo,
       nome,
       telefone,
@@ -104,19 +96,19 @@ export function LeadForm() {
       contactId,
       scheduled,
     });
-  }, [hydrated, step, valorCredito, faixaParcela, prazo, motivo, nome, telefone, instagram, consentimento, dealId, contactId, scheduled]);
+  }, [hydrated, step, valorCredito, motivo, nome, telefone, instagram, consentimento, dealId, contactId, scheduled]);
 
   const answers: QualificationAnswers | null = useMemo(() => {
-    if (!valorCredito || !faixaParcela || !prazo) return null;
-    return { valorCredito, faixaParcela, prazo, motivo, nome, telefone, instagram: instagram || undefined };
-  }, [valorCredito, faixaParcela, prazo, motivo, nome, telefone, instagram]);
+    if (!valorCredito) return null;
+    return { valorCredito, motivo, nome, telefone, instagram: instagram || undefined };
+  }, [valorCredito, motivo, nome, telefone, instagram]);
 
   const notifyPayload = useMemo(() => {
     if (!answers || !dealId || !contactId) return null;
     return { ...answers, dealId, contactId, agendado: false as const, tracking };
   }, [answers, dealId, contactId, tracking]);
 
-  const { markScheduled } = useExitNotify(notifyPayload, step === 5 && !!notifyPayload);
+  const { markScheduled } = useExitNotify(notifyPayload, step === 3 && !!notifyPayload);
 
   // Trava síncrona, separada do `loadingLead` (estado) — um duplo toque
   // rápido no botão dispara os dois cliques antes do React terminar de
@@ -144,7 +136,7 @@ export function LeadForm() {
       setDealId(data.dealId);
       setContactId(data.contactId);
       trackPixelEvent("Lead", leadEventId);
-      goToStep(5);
+      goToStep(2);
     } catch {
       setLeadError("Não foi possível enviar seus dados agora. Tente novamente.");
       // Só destrava em caso de falha — em caso de sucesso a etapa muda e
@@ -153,6 +145,27 @@ export function LeadForm() {
       submittingLeadRef.current = false;
     } finally {
       setLoadingLead(false);
+    }
+  }
+
+  async function submitMotivo() {
+    if (!dealId || !motivo.trim()) {
+      goToStep(3);
+      return;
+    }
+    setSavingMotivo(true);
+    try {
+      await fetch("/api/deal-note", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ dealId, note: `Motivo informado: ${motivo.trim()}` }),
+      });
+      goToStep(3);
+    } catch {
+      // Falha silenciosa pro usuário, continua pro agendamento.
+      goToStep(3);
+    } finally {
+      setSavingMotivo(false);
     }
   }
 
@@ -181,7 +194,7 @@ export function LeadForm() {
       }).catch(() => {});
 
       setScheduled({ date, time });
-      goToStep(6);
+      goToStep(4);
     } catch {
       setSchedError("Não foi possível confirmar o agendamento agora. Tente novamente.");
     } finally {
@@ -222,7 +235,7 @@ export function LeadForm() {
         }).catch(() => {});
       }
       setScheduled(null);
-      goToStep(6);
+      goToStep(4);
     } finally {
       setSavingOutro(false);
     }
@@ -252,41 +265,8 @@ export function LeadForm() {
       break;
     case 1:
       content = (
-        <ChoiceStep
-          step={1}
-          total={TOTAL_STEPS}
-          title="Qual faixa de parcela você considera ideal?"
-          options={FAIXA_PARCELA_OPTIONS}
-          value={faixaParcela}
-          onChange={setFaixaParcela}
-          onNext={() => goToStep(2)}
-          onBack={() => goToStep(0)}
-        />
-      );
-      break;
-    case 2:
-      content = (
-        <ChoiceStep
-          step={2}
-          total={TOTAL_STEPS}
-          title="Para quando você pretende contratar o consórcio?"
-          options={PRAZO_OPTIONS}
-          value={prazo}
-          onChange={setPrazo}
-          onNext={() => goToStep(3)}
-          onBack={() => goToStep(1)}
-        />
-      );
-      break;
-    case 3:
-      content = (
-        <MotivoStep step={3} total={TOTAL_STEPS} value={motivo} onChange={setMotivo} onNext={() => goToStep(4)} onBack={() => goToStep(2)} />
-      );
-      break;
-    case 4:
-      content = (
         <ContatoStep
-          step={4}
+          step={1}
           total={TOTAL_STEPS}
           nome={nome}
           telefone={telefone}
@@ -297,16 +277,28 @@ export function LeadForm() {
           onChangeInstagram={setInstagram}
           onChangeConsentimento={setConsentimento}
           onNext={submitContato}
-          onBack={() => goToStep(3)}
+          onBack={() => goToStep(0)}
           loading={loadingLead}
           error={leadError}
         />
       );
       break;
-    case 5:
+    case 2:
+      content = (
+        <MotivoStep 
+          step={2} 
+          total={TOTAL_STEPS} 
+          value={motivo} 
+          onChange={setMotivo} 
+          onNext={submitMotivo} 
+          loading={savingMotivo}
+        />
+      );
+      break;
+    case 3:
       content = (
         <AgendamentoStep
-          step={5}
+          step={3}
           total={TOTAL_STEPS}
           onConfirm={confirmAgendamento}
           onOutroHorario={handleOutroHorario}

@@ -79,8 +79,6 @@ function buildDealDescription(answers: QualificationAnswers): string {
   // sabe o valor exato), então tudo entra como texto legível aqui.
   return [
     `Valor de crédito buscado: ${answers.valorCredito}`,
-    `Faixa de parcela ideal: ${answers.faixaParcela}`,
-    `Prazo pra contratar: ${answers.prazo}`,
     `O que despertou o interesse: ${answers.motivo || "—"}`,
     answers.instagram ? `Instagram: @${answers.instagram.replace(/^@/, "")}` : null,
   ]

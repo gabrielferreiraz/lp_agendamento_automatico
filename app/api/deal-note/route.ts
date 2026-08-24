@@ -6,7 +6,7 @@ import type { DealNoteRequest } from "@/types/lead";
 
 export const dynamic = "force-dynamic";
 
-const MAX_NOTE_LENGTH = 300;
+const MAX_NOTE_LENGTH = 500;
 
 // Usado pela opção "nenhum desses horários funciona pra mim" — texto
 // livre que o lead escreve na etapa de agendamento, anotado na descrição

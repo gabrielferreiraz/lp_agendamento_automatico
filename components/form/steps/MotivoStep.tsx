@@ -6,14 +6,14 @@ export function MotivoStep({
   value,
   onChange,
   onNext,
-  onBack,
+  loading = false,
 }: {
   step: number;
   total: number;
   value: string;
   onChange: (v: string) => void;
   onNext: () => void;
-  onBack: () => void;
+  loading?: boolean;
 }) {
   return (
     <StepShell
@@ -21,12 +21,9 @@ export function MotivoStep({
       total={total}
       title="Conte um pouco o que despertou seu interesse pelo consórcio"
       footer={
-        <>
-          <PrimaryButton onClick={onNext} disabled={value.trim().length < 3}>
-            Continuar
-          </PrimaryButton>
-          <BackLink onClick={onBack} />
-        </>
+        <PrimaryButton onClick={onNext} disabled={value.trim().length < 3} loading={loading}>
+          Continuar
+        </PrimaryButton>
       }
     >
       {/* Sem autoFocus de propósito — abrir o teclado sozinho bem na hora
